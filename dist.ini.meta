@@ -22,3 +22,5 @@ srcreadme         = mkdn
 
 [Prereqs]
 
+[Munge::Whitespace]
+filename = LICENSE

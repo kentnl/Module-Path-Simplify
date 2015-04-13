@@ -496,6 +496,14 @@ x_Dist_Zilla:
       name: Prereqs
       version: '5.034'
     -
+      class: Dist::Zilla::Plugin::Munge::Whitespace
+      config:
+        Dist::Zilla::Plugin::Munge::Whitespace:
+          filename:
+            - LICENSE
+      name: Munge::Whitespace
+      version: '0.001000'
+    -
       class: Dist::Zilla::Plugin::FinderCode
       name: ':InstallModules'
       version: '5.034'
