@@ -196,7 +196,7 @@ sub get_display {
 
 sub get_path_suffixed {
   my ( $self, $alias ) = @_;
-  if ( $alias eq $self->get_display($_) ) {
+  if ( $alias eq $self->get_display($alias) ) {
     return $self->get_path($alias);
   }
   return sprintf q[%s (%s)], $self->get_path($alias), $alias;
