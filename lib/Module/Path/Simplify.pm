@@ -238,6 +238,23 @@ for instance, like in C<%INC>, and aids in compressing them into a format more e
 for use in diagnostic reporting such as stack-traces, where legibility of the trace is more important
 to you than being able to use path C<URIs> verbatim.
 
+=head1 USAGE
+
+  use Module::Path::Simplify;
+
+  my $simplifier = Module::Path::Simplify->new();
+
+  print $simplifier->simplify( $INC{'Module/Path/Simplify.pm'} )
+    # This may output something like $INC[0]/Module/Path/Simplify.pm
+    # or even ${VP} or ${SP}, depending on where you installed it.
+
+  print $simplifier->pp_aliases;
+    # This will emit a key => value table of all the aliases used so far
+    # by this instance, expanding the display setting of the alias to the path matched.
+    #
+    # In cases where the aliases are different to their display values for better compressability
+    # the raw internal alias names will be displayed in parentheses at the end of the line.
+
 =head1 METHODS
 
 =head2 C<new>
@@ -259,23 +276,6 @@ Returns the internal alias tracking object.
 
 Return a string detailing the used simplification aliases
 and where they map to. ( And possibly their internal identifier )
-
-=head1 USAGE
-
-  use Module::Path::Simplify;
-
-  my $simplifier = Module::Path::Simplify->new();
-
-  print $simplifier->simplify( $INC{'Module/Path/Simplify.pm'} )
-    # This may output something like $INC[0]/Module/Path/Simplify.pm
-    # or even ${VP} or ${SP}, depending on where you installed it.
-
-  print $simplifier->pp_aliases;
-    # This will emit a key => value table of all the aliases used so far
-    # by this instance, expanding the display setting of the alias to the path matched.
-    #
-    # In cases where the aliases are different to their display values for better compressability
-    # the raw internal alias names will be displayed in parentheses at the end of the line.
 
 =head1 AUTHOR
 

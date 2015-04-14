@@ -386,17 +386,12 @@
                      },
                      {
                         "class" : "Pod::Weaver::Section::Generic",
-                        "name" : "SYNOPSIS",
-                        "version" : "4.011"
-                     },
-                     {
-                        "class" : "Pod::Weaver::Section::Generic",
                         "name" : "DESCRIPTION",
                         "version" : "4.011"
                      },
                      {
                         "class" : "Pod::Weaver::Section::Generic",
-                        "name" : "OVERVIEW",
+                        "name" : "USAGE",
                         "version" : "4.011"
                      },
                      {
