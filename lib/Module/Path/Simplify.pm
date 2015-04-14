@@ -1,4 +1,4 @@
-use 5.006;  # our
+use 5.006;    # our
 use strict;
 use warnings;
 
@@ -6,9 +6,178 @@ package Module::Path::Simplify;
 
 our $VERSION = '0.001000';
 
-# ABSTRACT: Kent Failed To Provide An Abstract
+# ABSTRACT: Simplify absolute paths for pretty-printing.
 
 our $AUTHORITY = 'cpan:KENTNL'; # AUTHORITY
+
+sub new {
+  my ( $class, @args ) = @_;
+  return bless { ref $args[0] ? %{ $args[0] } : @args }, $class;
+}
+
+sub simplify {
+  my ( $self, $path ) = @_;
+
+  my ( $best, ) = sort { length $a->{relative_path} <=> length $b->{relative_path} } grep { defined }
+    $self->_find_config($path),
+    $self->_find_inc($path);
+
+  if ( defined $best ) {
+    $self->aliases->set( $best->{alias}, $best->{alias_path}, $best->{display}, );
+    my $real_display = $self->aliases->get_display( $best->{alias} );
+    return sprintf q[%s/%s], $real_display, $best->{relative_path};
+  }
+  return $path;
+}
+
+sub aliases {
+  my ($self) = @_;
+  return ( $self->{aliases} ||= Module::Path::Simplify::_AliasMap->new() );
+}
+
+sub pp_aliases {
+  my ($self) = @_;
+  return qq[\t] . join qq[\n\t], $self->aliases->pretty;
+}
+
+sub _find_config {
+  my ( $self, $path, ) = @_;
+  require Config;
+  my (@try) = (
+    { display => 'SS', key => 'sitelib_stem' },
+    { display => 'SP', key => 'siteprefix' },
+    { display => 'VS', key => 'vendorlib_stem' },
+    { display => 'VP', key => 'vendorprefix' },
+    { display => 'PP', key => 'prefix' },
+    { display => 'PP', key => 'sitearch' },
+    { display => 'PP', key => 'sitelib' },
+    { display => 'PP', key => 'vendorarch' },
+    { display => 'PP', key => 'vendorlib' },
+    { display => 'PP', key => 'archlib' },
+    { display => 'PP', key => 'privlib' },
+  );
+  my $shortest;
+  my $lib;
+  my $alias;
+  my $display;
+
+  for my $job (@try) {
+    my $candidate_lib = $Config::Config{ $job->{key} };
+    next if not defined $candidate_lib or ref $candidate_lib;
+    $candidate_lib =~ s{/?\z}{/}g;
+    if ( $path =~ /\A\Q$candidate_lib\E(.*\z)/s ) {
+      my $short = $1;
+      if ( not defined $shortest or length $short < length $shortest ) {
+        $shortest = $short;
+        $lib      = $candidate_lib;
+        $alias    = 'config.' . $job->{key};
+        $display  = '${' . $job->{display} . '}';
+      }
+    }
+  }
+  return unless defined $shortest;
+  return {
+    alias         => $alias,
+    relative_path => $shortest,
+    display       => $display,
+    alias_path    => $lib,
+  };
+}
+
+sub _find_inc {
+  my ( $self, $path, ) = @_;
+  my $shortest;
+  my $inc;
+  my $alias;
+
+  for my $inc_no ( 0 .. $#INC ) {
+    my $candidate_inc = $INC[$inc_no];
+    next if ref $candidate_inc;
+    $candidate_inc =~ s{/?\z}{/}g;
+    if ( $path =~ /\A\Q$candidate_inc\E(.*\z)/s ) {
+      my $short = $1;
+      if ( not defined $shortest or length $short < length $shortest ) {
+        $shortest = $short;
+        $alias    = sprintf q[$INC[%d]], $inc_no;
+        $inc      = $candidate_inc;
+      }
+    }
+  }
+  return unless defined $shortest;
+  return {
+    alias         => $alias,
+    relative_path => $shortest,
+    display       => $alias,
+    alias_path    => $inc,
+  };
+}
+
+package Module::Path::Simplify::_AliasMap;
+
+sub new {
+  my ( $class, @args ) = @_;
+  return bless { aliases => {}, display => {} }, $class;
+}
+
+# Note; display here is the default display value.
+# User specific overrides must be independent as
+# not to create alias entries for things that aren't seen.
+sub set {
+  my ( $self, $alias, $path, $display ) = @_;
+  $self->{aliases}->{$alias} = {
+    path => $path,
+    ( $display ? ( display => $display ) : () ),
+  };
+}
+
+sub get {
+  my ( $self, $alias ) = @_;
+  return $self->{aliases}->{$alias};
+}
+
+sub names {
+  my ($self) = @_;
+  return sort keys %{ $self->{aliases} };
+}
+
+sub get_path {
+  my ( $self, $alias ) = @_;
+  return $self->{aliases}->{$alias}->{'path'}
+    if exists $self->{aliases}->{$alias};
+  return;
+}
+
+# Again, note: this sets the user override, which is only
+# to be used when the alias is actually vivified.
+sub set_display {
+  my ( $self, $alias, $display ) = @_;
+  $self->{display}->{$alias} = $display;
+  return;
+}
+
+sub get_display {
+  my ( $self, $alias ) = @_;
+  return $self->{display}->{$alias} if exists $self->{display}->{$alias};
+  return $self->{aliases}->{$alias}->{display}
+    if exists $self->{aliases}->{$alias}
+    and exists $self->{aliases}->{$alias}->{display};
+  return $alias;
+}
+
+sub pretty {
+  my ($self) = @_;
+  my $max;
+  for my $name ( $self->names ) {
+    $max = length $name if not defined $max or length $name > $max;
+  }
+  return map {
+    my ($suffix) =
+      $_ eq $self->get_display($_)
+      ? ""
+      : ' (' . $_ . ')';
+    sprintf "%${max}s => %s%s", $self->get_display($_), $self->get_path($_), $suffix
+  } $self->names;
+}
 
 1;
 
@@ -20,11 +189,35 @@ __END__
 
 =head1 NAME
 
-Module::Path::Simplify - Kent Failed To Provide An Abstract
+Module::Path::Simplify - Simplify absolute paths for pretty-printing.
 
 =head1 VERSION
 
 version 0.001000
+
+=head1 DESCRIPTION
+
+This module aids in simplifying paths to modules you may already have had lying around,
+for instance, like in C<%INC>, and aids in compressing them into a more skimmable format,
+for use in diagnostic reporting such as stack-traces, where legibility of the trace is more important
+to you than being able to use path C<URIs> verbatim.
+
+=head1 USAGE
+
+  use Module::Path::Simplify;
+
+  my $simplifier = Module::Path::Simplify->new();
+
+  print $simplifier->simplify( $INC{'Module/Path/Simplify.pm'} ) 
+    # This may output something like $INC[0]/Module/Path/Simplify.pm
+    # or even ${VP} or ${SP}, depending on where you installed it.
+
+  print $simplifier->pp_aliases;
+    # This will emit a key => value table of all the aliases used so far
+    # by this instance, expanding the display setting of the alias to the path matched.
+    #
+    # In cases where the aliases are different to their display values for better compressability
+    # the raw internal alias names will be displayed in parentheses at the end of the line.
 
 =head1 AUTHOR
 

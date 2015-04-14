@@ -1,5 +1,5 @@
 {
-   "abstract" : "Kent Failed To Provide An Abstract",
+   "abstract" : "Simplify absolute paths for pretty-printing.",
    "author" : [
       "Kent Fredric <kentnl@cpan.org>"
    ],
