@@ -50,7 +50,7 @@ sub simplify {
 
   my $match_path = _abs_unix_path($path);
 
-  my $best_match = $self->_find_in_set( $match_path, $self->_tests_config, $self->_tests_inc );
+  my $best_match = $self->_find_in_set( $match_path, [ $self->_tests_config, $self->_tests_inc ] );
 
   return $path unless defined $best_match;
 
@@ -164,9 +164,9 @@ sub _tests_inc {
 }
 
 sub _find_in_set {
-  my ( undef, $path, @tries ) = @_;
+  my ( undef, $path, $tries ) = @_;
   my ( $shortest, $match_target );
-  for my $try (@tries) {
+  for my $try ( @{$tries} ) {
     next unless $try->valid and my $short = $try->matched_suffix($path);
     next if defined $shortest and length $short >= length $shortest;
     $shortest     = $short;
