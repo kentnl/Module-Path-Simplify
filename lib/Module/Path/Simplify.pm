@@ -208,7 +208,7 @@ to you than being able to use path C<URIs> verbatim.
 
   my $simplifier = Module::Path::Simplify->new();
 
-  print $simplifier->simplify( $INC{'Module/Path/Simplify.pm'} ) 
+  print $simplifier->simplify( $INC{'Module/Path/Simplify.pm'} )
     # This may output something like $INC[0]/Module/Path/Simplify.pm
     # or even ${VP} or ${SP}, depending on where you installed it.
 
