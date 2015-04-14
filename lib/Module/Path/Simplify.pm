@@ -71,15 +71,17 @@ sub _find_config {
   my ( undef, $path, ) = @_;
   require Config;
   my (@try) = (
-    { display => 'SS', key => 'sitelib_stem' },
-    { display => 'SP', key => 'siteprefix' },
-    { display => 'VS', key => 'vendorlib_stem' },
-    { display => 'VP', key => 'vendorprefix' },
-    { display => 'PP', key => 'prefix' },
     { display => 'SA', key => 'sitearch' },
     { display => 'SL', key => 'sitelib' },
+    { display => 'SS', key => 'sitelib_stem' },
+    { display => 'SP', key => 'siteprefix' },
+
     { display => 'VA', key => 'vendorarch' },
     { display => 'VL', key => 'vendorlib' },
+    { display => 'VS', key => 'vendorlib_stem' },
+    { display => 'VP', key => 'vendorprefix' },
+
+    { display => 'PP', key => 'prefix' },
     { display => 'PA', key => 'archlib' },
     { display => 'PL', key => 'privlib' },
   );
