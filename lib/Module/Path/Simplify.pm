@@ -37,12 +37,11 @@ sub simplify {
     $self->_find_config($path),
     $self->_find_inc($path);
 
-  if ( defined $best ) {
-    $self->aliases->set( $best->{alias}, $best->{alias_path}, $best->{display}, );
-    my $real_display = $self->aliases->get_display( $best->{alias} );
-    return sprintf q[%s/%s], $real_display, $best->{relative_path};
-  }
-  return $path;
+  return $path unless defined $best;
+
+  $self->aliases->set( $best->{alias}, $best->{alias_path}, $best->{display}, );
+  my $real_display = $self->aliases->get_display( $best->{alias} );
+  return sprintf q[%s/%s], $real_display, $best->{relative_path};
 }
 
 
@@ -93,13 +92,13 @@ sub _find_config {
     $candidate_lib =~ s{ /? \z }{/}gxs;
     if ( $path =~ / \A \Q$candidate_lib\E (.*\z) /sx ) {
       my $short = $1;
-      if ( not defined $shortest or length $short < length $shortest ) {
-        $shortest = $short;
-        $lib      = $candidate_lib;
-        $alias    = 'config.' . $job->{key};
-        ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-        $display = '${' . $job->{display} . '}';
-      }
+
+      next if defined $shortest and length $short > length $shortest;
+      $shortest = $short;
+      $lib      = $candidate_lib;
+      $alias    = 'config.' . $job->{key};
+      ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+      $display = '${' . $job->{display} . '}';
     }
   }
   return unless defined $shortest;
@@ -122,12 +121,12 @@ sub _find_inc {
     $candidate_inc =~ s{ /? \z }{/}gsx;
     if ( $path =~ / \A \Q$candidate_inc\E (.*\z) /sx ) {
       my $short = $1;
-      if ( not defined $shortest or length $short < length $shortest ) {
-        $shortest = $short;
-        ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-        $alias = sprintf q[$INC[%d]], $inc_no;
-        $inc = $candidate_inc;
-      }
+      next if defined $shortest and length $short > length $shortest;
+
+      $shortest = $short;
+      ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+      $alias = sprintf q[$INC[%d]], $inc_no;
+      $inc = $candidate_inc;
     }
   }
   return unless defined $shortest;
@@ -196,9 +195,7 @@ sub get_display {
 
 sub get_path_suffixed {
   my ( $self, $alias ) = @_;
-  if ( $alias eq $self->get_display($alias) ) {
-    return $self->get_path($alias);
-  }
+  return $self->get_path($alias) if $alias eq $self->get_display($alias);
   return sprintf q[%s (%s)], $self->get_path($alias), $alias;
 }
 
