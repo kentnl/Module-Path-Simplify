@@ -114,8 +114,6 @@ sub _tests_config {
 }
 
 sub _gen_tests_config {
-  my (@out);
-  require Config;
   my (@try) = (
     { display => 'SA', key => 'sitearch' },
     { display => 'SL', key => 'sitelib' },
@@ -131,32 +129,30 @@ sub _gen_tests_config {
     { display => 'PA', key => 'archlib' },
     { display => 'PL', key => 'privlib' },
   );
-  for my $try (@try) {
-    ## no critic (Variables::ProhibitPackageVars)
-    push @out, Module::Path::Simplify::_MatchTarget->new(
+  require Config;
+  ## no critic (Lax::ProhibitComplexMappings::LinesNotStatements)
+  return map {
+    Module::Path::Simplify::_MatchTarget->new(
       ## no critic (Variables::ProhibitPackageVars)
-      alias_path => $Config::Config{ $try->{key} },
-      alias      => 'config.' . $try->{key},
+      alias_path => $Config::Config{ $_->{key} },
+      alias      => 'config.' . $_->{key},
       ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-      display => '${' . $try->{display} . '}',
+      display => '${' . $_->{display} . '}',
     );
-  }
-  return @out;
+  } @try;
 }
 
 sub _gen_tests_user_inc {
   my ( undef, $prefix, $list ) = @_;
-  my (@out);
   my (@u_inc) = @{ $list || [] };
-  for my $inc_no ( 0 .. $#u_inc ) {
-    push @out,
-      Module::Path::Simplify::_MatchTarget->new(
-      alias_path => $u_inc[$inc_no],
-      alias      => $prefix . '[' . $inc_no . ']',
-      display    => $prefix . '[' . $inc_no . ']',
-      );
-  }
-  return @out;
+  ## no critic (Lax::ProhibitComplexMappings::LinesNotStatements)
+  return map {
+    Module::Path::Simplify::_MatchTarget->new(
+      alias_path => $u_inc[$_],
+      alias      => $prefix . '[' . $_ . ']',
+      display    => $prefix . '[' . $_ . ']',
+    );
+  } 0 .. $#u_inc;
 }
 
 # Cache + saves on first use unless nonfrozen.
