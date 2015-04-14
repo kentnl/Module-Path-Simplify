@@ -16,6 +16,19 @@ our $AUTHORITY = 'cpan:KENTNL'; # AUTHORITY
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
 sub new {
   my ( $class, @args ) = @_;
   my $self = bless { ref $args[0] ? %{ $args[0] } : @args }, $class;
@@ -71,11 +84,23 @@ sub pp_aliases {
   return qq[\t] . join qq[\n\t], $self->aliases->pretty;
 }
 
+
+
+
+
+
+
 sub inc_dynamic {
   my ($self) = @_;
   return $self->{inc_dynamic} if exists $self->{inc_dynamic};
   return;
 }
+
+
+
+
+
+
 
 sub inc {
   my ($self) = @_;
@@ -341,6 +366,19 @@ to you than being able to use path C<URIs> verbatim.
 
 Create a C<simplifier> object.
 
+Normally, C<new> captures the state of C<@INC> at its creation time.
+
+This can be disabled to use a per-resolution dynamic C<@INC> via
+
+  ->new( inc_dynamic => 1 );
+
+Additionally, C<@INC> can be overridden with a custom list via
+
+  ->new( inc => [ @INC ] );
+
+L<< C<inc_dynamic>|/inc_dynamic >> and L<< C<inc>|/inc >> don't work together, and setting C<inc_dynamic>
+will cause C<inc> to be ignored.
+
 =head2 C<simplify>
 
 Return a simplified version of a path, or the path itself
@@ -356,6 +394,14 @@ Returns the internal alias tracking object.
 
 Return a string detailing the used simplification aliases
 and where they map to. ( And possibly their internal identifier )
+
+=head2 C<inc_dynamic>
+
+Returns whether or not this simplifier is using a dynamic C<@INC>.
+
+=head2 C<inc>
+
+Returns the snapshot C<@INC> in use when not using C<inc_dynamic>
 
 =head1 AUTHOR
 
