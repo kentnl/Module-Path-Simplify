@@ -73,7 +73,7 @@ sub _find_config {
         $lib      = $candidate_lib;
         $alias    = 'config.' . $job->{key};
         ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-        $display  = '${' . $job->{display} . '}';
+        $display = '${' . $job->{display} . '}';
       }
     }
   }
@@ -100,8 +100,9 @@ sub _find_inc {
       my $short = $1;
       if ( not defined $shortest or length $short < length $shortest ) {
         $shortest = $short;
-        $alias    = sprintf q[$INC[%d]], $inc_no;
-        $inc      = $candidate_inc;
+        ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+        $alias = sprintf q[$INC[%d]], $inc_no;
+        $inc = $candidate_inc;
       }
     }
   }
@@ -117,19 +118,21 @@ sub _find_inc {
 package Module::Path::Simplify::_AliasMap;
 
 sub new {
-  my ( $class, @args ) = @_;
+  my ( $class, ) = @_;
   return bless { aliases => {}, display => {} }, $class;
 }
 
 # Note; display here is the default display value.
 # User specific overrides must be independent as
 # not to create alias entries for things that aren't seen.
+## no critic (NamingConventions::ProhibitAmbiguousNames)
 sub set {
   my ( $self, $alias, $path, $display ) = @_;
   $self->{aliases}->{$alias} = {
     path => $path,
     ( $display ? ( display => $display ) : () ),
   };
+  return;
 }
 
 sub get {
@@ -138,47 +141,47 @@ sub get {
 }
 
 sub names {
+## Please see file perltidy.ERR
+## Please see file perltidy.ERR
   my ($self) = @_;
-  return sort keys %{ $self->{aliases} };
+  my (@list) = sort keys %{ $self->{aliases} } );
+  return @list;
 }
 
 sub get_path {
-  my ( $self, $alias ) = @_;
-  return $self->{aliases}->{$alias}->{'path'}
-    if exists $self->{aliases}->{$alias};
-  return;
+    my ( $self, $alias ) = @_;
+    return $self->{aliases}->{$alias}->{'path'}
+      if exists $self->{aliases}->{$alias};
+    return;
 }
 
 # Again, note: this sets the user override, which is only
 # to be used when the alias is actually vivified.
 sub set_display {
-  my ( $self, $alias, $display ) = @_;
-  $self->{display}->{$alias} = $display;
-  return;
+    my ( $self, $alias, $display ) = @_;
+    $self->{display}->{$alias} = $display;
+    return;
 }
 
 sub get_display {
-  my ( $self, $alias ) = @_;
-  return $self->{display}->{$alias} if exists $self->{display}->{$alias};
-  return $self->{aliases}->{$alias}->{display}
-    if exists $self->{aliases}->{$alias}
-    and exists $self->{aliases}->{$alias}->{display};
-  return $alias;
+    my ( $self, $alias ) = @_;
+    return $self->{display}->{$alias} if exists $self->{display}->{$alias};
+    return $self->{aliases}->{$alias}->{display}
+      if exists $self->{aliases}->{$alias}
+      and exists $self->{aliases}->{$alias}->{display};
+    return $alias;
 }
 
 sub pretty {
-  my ($self) = @_;
-  my $max;
-  for my $name ( $self->names ) {
-    $max = length $name if not defined $max or length $name > $max;
-  }
-  return map {
-    my ($suffix) =
-      $_ eq $self->get_display($_)
-      ? ""
-      : ' (' . $_ . ')';
-    sprintf "%${max}s => %s%s", $self->get_display($_), $self->get_path($_), $suffix
-  } $self->names;
+    my ($self) = @_;
+    my $max;
+    for my $name ( $self->names ) {
+      $max = length $name if not defined $max or length $name > $max;
+    }
+    return map {
+      sprintf "%${max}s => %s%s", $self->get_display($_), $self->get_path($_),
+        ( $_ eq $self->get_display($_) ? "" : ' (' . $_ . ')' )
+    } $self->names;
 }
 
 1;
