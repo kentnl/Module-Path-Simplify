@@ -212,7 +212,7 @@ sub pretty {
   for my $name ( $self->names ) {
     $max = length $name if not defined $max or length $name > $max;
   }
-  return map { sprintf "%${max}s => %s%s", $self->get_display($_), $self->get_path_suffixed($_) } $self->names;
+  return map { sprintf "%${max}s => %s", $self->get_display($_), $self->get_path_suffixed($_) } $self->names;
 }
 
 1;
