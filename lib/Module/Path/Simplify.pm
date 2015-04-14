@@ -41,7 +41,7 @@ sub pp_aliases {
 }
 
 sub _find_config {
-  my ( $self, $path, ) = @_;
+  my ( undef, $path, ) = @_;
   require Config;
   my (@try) = (
     { display => 'SS', key => 'sitelib_stem' },
@@ -62,10 +62,11 @@ sub _find_config {
   my $display;
 
   for my $job (@try) {
+    ## no critic (Variables::ProhibitPackageVars)
     my $candidate_lib = $Config::Config{ $job->{key} };
     next if not defined $candidate_lib or ref $candidate_lib;
-    $candidate_lib =~ s{/?\z}{/}g;
-    if ( $path =~ /\A\Q$candidate_lib\E(.*\z)/s ) {
+    $candidate_lib =~ s{ /? \z }{/}gxs;
+    if ( $path =~ / \A \Q$candidate_lib\E (.*\z) /sx ) {
       my $short = $1;
       if ( not defined $shortest or length $short < length $shortest ) {
         $shortest = $short;
@@ -85,7 +86,7 @@ sub _find_config {
 }
 
 sub _find_inc {
-  my ( $self, $path, ) = @_;
+  my ( undef, $path, ) = @_;
   my $shortest;
   my $inc;
   my $alias;
