@@ -111,7 +111,7 @@ sub _find_config {
 
 sub _get_suffix {
   my ( $prefix, $path ) = @_;
-  return unless defined $path and not ref $path;
+  return if not defined $path or ref $path;
   $prefix =~ s{ /? \z }{/}gxs;
   if ( $path =~ / \A \Q$prefix\E (.*\z) /sx ) {
     my $short = $1;
@@ -124,7 +124,7 @@ sub _abs_unix_path {
   my ($path) = @_;
   return '' unless defined $path;
   require File::Spec;
-  return '' unless ( -e $path or File::Spec->file_name_is_absolute($path) );
+  return '' unless -e $path or File::Spec->file_name_is_absolute($path);
 
   # File::Spec's rel2abs does not resolve symlinks
   # we *need* to look at the filesystem to be sure
