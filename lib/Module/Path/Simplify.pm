@@ -242,7 +242,7 @@ to you than being able to use path C<URIs> verbatim.
 
 =head2 C<new>
 
-Create a simplifier object.
+Create a C<simplifier> object.
 
 =head2 C<simplify>
 
