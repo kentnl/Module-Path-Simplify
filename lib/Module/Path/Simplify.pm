@@ -107,23 +107,15 @@ sub _gen_tests_config {
     { display => 'PL', key => 'privlib' },
   );
   for my $try (@try) {
-<<<<<<< HEAD
     ## no critic (Variables::ProhibitPackageVars)
-    next unless my $candidate_lib = _abs_unix_path( $Config::Config{ $try->{key} } );
     push @out, {
-      alias_path => $candidate_lib,
+      Module::Path::Simplify::_MatchTarget->new(
+      ## no critic (Variables::ProhibitPackageVars)
+      alias_path => $Config::Config{ $try->{key} },
       alias      => 'config.' . $try->{key},
       ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
       display => '${' . $try->{display} . '}',
-    };
-=======
-    push @out,
-      Module::Path::Simplify::_MatchTarget->new(
-      alias_path => $Config::Config{ $try->{key} },
-      alias      => 'config.' . $try->{key},
-      display    => '${' . $try->{display} . '}',
       );
->>>>>>> a145124... Move matching logic into a container
   }
   return @out;
 }
