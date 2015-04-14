@@ -154,7 +154,7 @@ sub _find_in_set {
   return unless defined $shortest;
   return {
     relative_path => $shortest,
-    match_target  => $match_target
+    match_target  => $match_target,
   };
 }
 
