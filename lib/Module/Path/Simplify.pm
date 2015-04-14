@@ -10,10 +10,25 @@ our $VERSION = '0.001000';
 
 # AUTHORITY
 
+=method C<new>
+
+Create a C<simplifier> object.
+
+=cut
+
 sub new {
   my ( $class, @args ) = @_;
   return bless { ref $args[0] ? %{ $args[0] } : @args }, $class;
 }
+
+=method C<simplify>
+
+Return a simplified version of a path, or the path itself
+if there are no simplifications available
+
+  print $simpl->simplify( $INC{'Test/More.pm'} )
+
+=cut
 
 sub simplify {
   my ( $self, $path ) = @_;
@@ -30,10 +45,23 @@ sub simplify {
   return $path;
 }
 
+=method C<aliases>
+
+Returns the internal alias tracking object.
+
+=cut
+
 sub aliases {
   my ($self) = @_;
   return ( $self->{aliases} ||= Module::Path::Simplify::_AliasMap->new() );
 }
+
+=method C<pp_aliases>
+
+Return a string detailing the used simplification aliases
+and where they map to. ( And possibly their internal identifier )
+
+=cut
 
 sub pp_aliases {
   my ($self) = @_;
@@ -188,3 +216,28 @@ sub pretty {
 }
 
 1;
+
+=head1 DESCRIPTION
+
+This module aids in simplifying paths to modules you may already have had lying around,
+for instance, like in C<%INC>, and aids in compressing them into a format more easily skimmed,
+for use in diagnostic reporting such as stack-traces, where legibility of the trace is more important
+to you than being able to use path C<URIs> verbatim.
+
+=head1 USAGE
+
+  use Module::Path::Simplify;
+
+  my $simplifier = Module::Path::Simplify->new();
+
+  print $simplifier->simplify( $INC{'Module/Path/Simplify.pm'} )
+    # This may output something like $INC[0]/Module/Path/Simplify.pm
+    # or even ${VP} or ${SP}, depending on where you installed it.
+
+  print $simplifier->pp_aliases;
+    # This will emit a key => value table of all the aliases used so far
+    # by this instance, expanding the display setting of the alias to the path matched.
+    #
+    # In cases where the aliases are different to their display values for better compressability
+    # the raw internal alias names will be displayed in parentheses at the end of the line.
+
