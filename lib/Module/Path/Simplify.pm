@@ -110,7 +110,7 @@ sub _gen_tests_config {
       alias_path => $Config::Config{ $_->{key} },
       alias      => 'config.' . $_->{key},
       display    => '${' . $_->{display} . '}',
-    );
+      )
   } @try;
 }
 
@@ -122,7 +122,7 @@ sub _gen_tests_user_inc {
       alias_path => $u_inc[$_],
       alias      => $prefix . '[' . $_ . ']',
       display    => $prefix . '[' . $_ . ']',
-    );
+    )
   } 0 .. $#u_inc;
 }
 
@@ -136,7 +136,7 @@ sub _tests_inc {
 sub _find_in_set {
   my ( undef, $path, $tries ) = @_;
   my ( $shortest, $match_target );
-  for my $try (@{$tries}) {
+  for my $try ( @{$tries} ) {
     next unless $try->valid and my $short = $try->matched_suffix($path);
     next if defined $shortest and length $short >= length $shortest;
     $shortest     = $short;
