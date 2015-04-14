@@ -77,12 +77,12 @@ sub _find_config {
     { display => 'VS', key => 'vendorlib_stem' },
     { display => 'VP', key => 'vendorprefix' },
     { display => 'PP', key => 'prefix' },
-    { display => 'PP', key => 'sitearch' },
-    { display => 'PP', key => 'sitelib' },
-    { display => 'PP', key => 'vendorarch' },
-    { display => 'PP', key => 'vendorlib' },
-    { display => 'PP', key => 'archlib' },
-    { display => 'PP', key => 'privlib' },
+    { display => 'SA', key => 'sitearch' },
+    { display => 'SL', key => 'sitelib' },
+    { display => 'VA', key => 'vendorarch' },
+    { display => 'VL', key => 'vendorlib' },
+    { display => 'PA', key => 'archlib' },
+    { display => 'PL', key => 'privlib' },
   );
   my $shortest;
   my $lib;
