@@ -133,13 +133,14 @@ sub _abs_unix_path {
 
   return $abs_path unless 'MSWin32' eq $^O and $abs_path;
 
-  my $module = "Win32.pm"; require $module; # Hide from autoprereqs
+  my $module = 'Win32.pm'; require $module; # Hide from autoprereqs
 
+  ## no critic (Subroutines::ProhibitCallsToUnexportedSubs)
   # sometimes we can get a short/longname mix, normalize everything to longnames
   $abs_path = Win32::GetLongPathName($abs_path);
 
   # Fixup (native) slashes in Config not matching (unixy) slashes in INC
-  $abs_path =~ s|\\|/|g;
+  $abs_path =~ s{ \\ }{/}sgx;
 
   return $abs_path;
 }
