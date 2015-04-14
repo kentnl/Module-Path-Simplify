@@ -93,12 +93,12 @@ sub _find_config {
     my $candidate_lib = _abs_unix_path( $Config::Config{ $job->{key} } );
     next unless my $short = _get_suffix( $candidate_lib, $match_path );
 
-      next if defined $shortest and length $short > length $shortest;
-      $shortest = $short;
-      $lib      = $candidate_lib;
-      $alias    = 'config.' . $job->{key};
-      ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-      $display = '${' . $job->{display} . '}';
+    next if defined $shortest and length $short > length $shortest;
+    $shortest = $short;
+    $lib      = $candidate_lib;
+    $alias    = 'config.' . $job->{key};
+    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+    $display = '${' . $job->{display} . '}';
   }
   return unless defined $shortest;
   return {
@@ -155,12 +155,12 @@ sub _find_inc {
     my $candidate_inc = _abs_unix_path( $INC[$inc_no] );
     next unless my $short = _get_suffix( $candidate_inc, $match_path );
 
-      next if defined $shortest and length $short > length $shortest;
+    next if defined $shortest and length $short > length $shortest;
 
-      $shortest = $short;
-      ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-      $alias = sprintf q[$INC[%d]], $inc_no;
-      $inc = $candidate_inc;
+    $shortest = $short;
+    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+    $alias = sprintf q[$INC[%d]], $inc_no;
+    $inc = $candidate_inc;
   }
   return unless defined $shortest;
   return {
