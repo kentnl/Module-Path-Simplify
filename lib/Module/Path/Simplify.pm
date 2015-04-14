@@ -170,7 +170,7 @@ sub _find_in_set {
   my ( $shortest, $alias_path, $alias, $display );
   for my $try (@tries) {
     next unless my $short = _get_suffix( $try->{alias_path}, $match_path );
-    next if defined $shortest and length $short > length $shortest;
+    next if defined $shortest and length $short >= length $shortest;
     $shortest   = $short;
     $alias_path = $try->{alias_path};
     $alias      = $try->{alias};
