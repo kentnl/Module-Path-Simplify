@@ -198,7 +198,7 @@ version 0.001000
 =head1 DESCRIPTION
 
 This module aids in simplifying paths to modules you may already have had lying around,
-for instance, like in C<%INC>, and aids in compressing them into a more skimmable format,
+for instance, like in C<%INC>, and aids in compressing them into a format more easily skimmed,
 for use in diagnostic reporting such as stack-traces, where legibility of the trace is more important
 to you than being able to use path C<URIs> verbatim.
 
