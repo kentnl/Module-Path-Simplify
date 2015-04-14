@@ -1,6 +1,7 @@
 {
    "modules" : {
       "CPAN::Meta" : "2.150001",
+      "Cwd" : "3.54",
       "Dist::Zilla" : "5.034",
       "Dist::Zilla::App::Command::bakeini" : "0.002000",
       "Dist::Zilla::Plugin::Author::KENTNL::RecommendFixes" : "0.004002",

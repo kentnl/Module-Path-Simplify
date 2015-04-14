@@ -69,17 +69,20 @@ sub pp_aliases {
 
 sub _find_config {
   my ( undef, $path, ) = @_;
+  my $match_path = _abs_unix_path( $path );
   require Config;
   my (@try) = (
-    { display => 'SS', key => 'sitelib_stem' },
-    { display => 'SP', key => 'siteprefix' },
-    { display => 'VS', key => 'vendorlib_stem' },
-    { display => 'VP', key => 'vendorprefix' },
-    { display => 'PP', key => 'prefix' },
     { display => 'SA', key => 'sitearch' },
     { display => 'SL', key => 'sitelib' },
+    { display => 'SS', key => 'sitelib_stem' },
+    { display => 'SP', key => 'siteprefix' },
+
     { display => 'VA', key => 'vendorarch' },
     { display => 'VL', key => 'vendorlib' },
+    { display => 'VS', key => 'vendorlib_stem' },
+    { display => 'VP', key => 'vendorprefix' },
+
+    { display => 'PP', key => 'prefix' },
     { display => 'PA', key => 'archlib' },
     { display => 'PL', key => 'privlib' },
   );
@@ -87,10 +90,10 @@ sub _find_config {
 
   for my $job (@try) {
     ## no critic (Variables::ProhibitPackageVars)
-    my $candidate_lib = $Config::Config{ $job->{key} };
+    my $candidate_lib = _abs_unix_path( $Config::Config{ $job->{key} } );
     next if not defined $candidate_lib or ref $candidate_lib;
     $candidate_lib =~ s{ /? \z }{/}gxs;
-    if ( $path =~ / \A \Q$candidate_lib\E (.*\z) /sx ) {
+    if ( $match_path =~ / \A \Q$candidate_lib\E (.*\z) /sx ) {
       my $short = $1;
 
       next if defined $shortest and length $short > length $shortest;
@@ -110,16 +113,40 @@ sub _find_config {
   };
 }
 
+sub _abs_unix_path {
+  my ( $path ) = @_;
+  return '' unless defined $path;
+  require File::Spec;
+  return '' unless ( -e $path or File::Spec->file_name_is_absolute($path) );
+
+  # File::Spec's rel2abs does not resolve symlinks
+  # we *need* to look at the filesystem to be sure
+  require Cwd;
+  my $abs_path = Cwd::abs_path($path);
+
+  return $abs_path unless $^O eq 'MSWin32' and $abs_path;
+
+  eval sprintf q[require %s; 1], q[Win32];
+
+  # sometimes we can get a short/longname mix, normalize everything to longnames
+  $abs_path = Win32::GetLongPathName($abs_path);
+
+  # Fixup (native) slashes in Config not matching (unixy) slashes in INC
+  $abs_path =~ s|\\|/|g;
+
+  return $abs_path;
+}
+
 sub _find_inc {
   my ( undef, $path, ) = @_;
-
+  my $match_path = _abs_unix_path( $path );
   my ( $shortest, $inc, $alias );
 
   for my $inc_no ( 0 .. $#INC ) {
-    my $candidate_inc = $INC[$inc_no];
+    my $candidate_inc = _abs_unix_path($INC[$inc_no]);
     next if ref $candidate_inc;
     $candidate_inc =~ s{ /? \z }{/}gsx;
-    if ( $path =~ / \A \Q$candidate_inc\E (.*\z) /sx ) {
+    if ( $match_path =~ / \A \Q$candidate_inc\E (.*\z) /sx ) {
       my $short = $1;
       next if defined $shortest and length $short > length $shortest;
 

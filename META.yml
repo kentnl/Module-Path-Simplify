@@ -22,6 +22,8 @@ provides:
     file: lib/Module/Path/Simplify.pm
     version: '0.001000'
 requires:
+  Cwd: '0'
+  File::Spec: '0'
   perl: '5.006'
   strict: '0'
   warnings: '0'

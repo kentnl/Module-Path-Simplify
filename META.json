@@ -93,6 +93,8 @@
       },
       "runtime" : {
          "requires" : {
+            "Cwd" : "0",
+            "File::Spec" : "0",
             "perl" : "5.006",
             "strict" : "0",
             "warnings" : "0"
