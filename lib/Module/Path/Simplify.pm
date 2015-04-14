@@ -72,6 +72,7 @@ sub _find_config {
         $shortest = $short;
         $lib      = $candidate_lib;
         $alias    = 'config.' . $job->{key};
+        ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
         $display  = '${' . $job->{display} . '}';
       }
     }
@@ -94,8 +95,8 @@ sub _find_inc {
   for my $inc_no ( 0 .. $#INC ) {
     my $candidate_inc = $INC[$inc_no];
     next if ref $candidate_inc;
-    $candidate_inc =~ s{/?\z}{/}g;
-    if ( $path =~ /\A\Q$candidate_inc\E(.*\z)/s ) {
+    $candidate_inc =~ s{ /? \z }{/}gsx;
+    if ( $path =~ / \A \Q$candidate_inc\E (.*\z) /sx ) {
       my $short = $1;
       if ( not defined $shortest or length $short < length $shortest ) {
         $shortest = $short;
