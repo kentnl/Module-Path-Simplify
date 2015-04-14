@@ -36,6 +36,19 @@ to you than being able to use path `URIs` verbatim.
 
 Create a `simplifier` object.
 
+Normally, `new` captures the state of `@INC` at its creation time.
+
+This can be disabled to use a per-resolution dynamic `@INC` via
+
+    ->new( inc_dynamic => 1 );
+
+Additionally, `@INC` can be overridden with a custom list via
+
+    ->new( inc => [ @INC ] );
+
+[`inc_dynamic`](#inc_dynamic) and [`inc`](#inc) don't work together, and setting `inc_dynamic`
+will cause `inc` to be ignored.
+
 ## `simplify`
 
 Return a simplified version of a path, or the path itself
@@ -51,6 +64,14 @@ Returns the internal alias tracking object.
 
 Return a string detailing the used simplification aliases
 and where they map to. ( And possibly their internal identifier )
+
+## `inc_dynamic`
+
+Returns whether or not this simplifier is using a dynamic `@INC`.
+
+## `inc`
+
+Returns the snapshot `@INC` in use when not using `inc_dynamic`
 
 # AUTHOR
 

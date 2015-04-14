@@ -14,11 +14,26 @@ our $VERSION = '0.001000';
 
 Create a C<simplifier> object.
 
+Normally, C<new> captures the state of C<@INC> at its creation time.
+
+This can be disabled to use a per-resolution dynamic C<@INC> via
+
+  ->new( inc_dynamic => 1 );
+
+Additionally, C<@INC> can be overridden with a custom list via
+
+  ->new( inc => [ @INC ] );
+
+L<< C<inc_dynamic>|/inc_dynamic >> and L<< C<inc>|/inc >> don't work together, and setting C<inc_dynamic>
+will cause C<inc> to be ignored.
+
 =cut
 
 sub new {
   my ( $class, @args ) = @_;
-  return bless { ref $args[0] ? %{ $args[0] } : @args }, $class;
+  my $self = bless { ref $args[0] ? %{ $args[0] } : @args }, $class;
+  $self->inc unless $self->inc_dynamic;    # Force freezing at new
+  return $self;
 }
 
 =method C<simplify>
@@ -33,9 +48,7 @@ if there are no simplifications available
 sub simplify {
   my ( $self, $path ) = @_;
 
-  my ( $best, ) = sort { length $a->{relative_path} <=> length $b->{relative_path} } grep { defined }
-    $self->_find_config($path),
-    $self->_find_inc($path);
+  my $best = $self->_find_in_set( $path, $self->_tests_config, $self->_tests_inc );
 
   return $path unless defined $best;
 
@@ -67,9 +80,37 @@ sub pp_aliases {
   return qq[\t] . join qq[\n\t], $self->aliases->pretty;
 }
 
-sub _find_config {
-  my ( undef, $path, ) = @_;
-  my $match_path = _abs_unix_path($path);
+=method C<inc_dynamic>
+
+Returns whether or not this simplifier is using a dynamic C<@INC>.
+
+=cut
+
+sub inc_dynamic {
+  my ($self) = @_;
+  return $self->{inc_dynamic} if exists $self->{inc_dynamic};
+  return;
+}
+
+=method C<inc>
+
+Returns the snapshot C<@INC> in use when not using C<inc_dynamic>
+
+=cut
+
+sub inc {
+  my ($self) = @_;
+  return @{ $self->{inc} } if exists $self->{inc};
+  return @{ $self->{inc} ||= [@INC] };
+}
+
+sub _tests_config {
+  my ($self) = @_;
+  return @{ $self->{_tests_config} ||= [ $self->_gen_tests_config ] };
+}
+
+sub _gen_tests_config {
+  my (@out);
   require Config;
   my (@try) = (
     { display => 'SA', key => 'sitearch' },
@@ -86,26 +127,61 @@ sub _find_config {
     { display => 'PA', key => 'archlib' },
     { display => 'PL', key => 'privlib' },
   );
-  my ( $shortest, $lib, $alias, $display );
-
-  for my $job (@try) {
+  for my $try (@try) {
     ## no critic (Variables::ProhibitPackageVars)
-    my $candidate_lib = _abs_unix_path( $Config::Config{ $job->{key} } );
-    next unless my $short = _get_suffix( $candidate_lib, $match_path );
+    next unless my $candidate_lib = _abs_unix_path( $Config::Config{ $try->{key} } );
+    push @out, {
+      alias_path => $candidate_lib,
+      alias      => 'config.' . $try->{key},
+      ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+      display => '${' . $try->{display} . '}',
+    };
+  }
+  return @out;
+}
 
+sub _gen_tests_user_inc {
+  my ( undef, $prefix, $list ) = @_;
+  my (@out);
+  my (@u_inc) = @{ $list || [] };
+  for my $inc_no ( 0 .. $#u_inc ) {
+    next unless my $candidate_inc = _abs_unix_path( $u_inc[$inc_no] );
+    push @out,
+      {
+      alias_path => $candidate_inc,
+      alias      => $prefix . '[' . $inc_no . ']',
+      display    => $prefix . '[' . $inc_no . ']',
+      };
+  }
+  return @out;
+}
+
+# Cache + saves on first use unless nonfrozen.
+sub _tests_inc {
+  my ($self) = @_;
+  ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+  return @{ $self->{_tests_inc} ||= [ $self->_gen_tests_user_inc( '$INC', [ $self->inc ] ) ] } unless $self->inc_dynamic;
+  return $self->_gen_tests_user_inc( '$INC', \@INC );
+}
+
+sub _find_in_set {
+  my ( undef, $path, @tries ) = @_;
+  my $match_path = _abs_unix_path($path);
+  my ( $shortest, $alias_path, $alias, $display );
+  for my $try (@tries) {
+    next unless my $short = _get_suffix( $try->{alias_path}, $match_path );
     next if defined $shortest and length $short > length $shortest;
-    $shortest = $short;
-    $lib      = $candidate_lib;
-    $alias    = 'config.' . $job->{key};
-    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-    $display = '${' . $job->{display} . '}';
+    $shortest   = $short;
+    $alias_path = $try->{alias_path};
+    $alias      = $try->{alias};
+    $display    = $try->{display};
   }
   return unless defined $shortest;
   return {
     alias         => $alias,
     relative_path => $shortest,
     display       => $display,
-    alias_path    => $lib,
+    alias_path    => $alias_path,
   };
 }
 
@@ -144,31 +220,6 @@ sub _abs_unix_path {
   $abs_path =~ s{ \\ }{/}sgx;
 
   return $abs_path;
-}
-
-sub _find_inc {
-  my ( undef, $path, ) = @_;
-  my $match_path = _abs_unix_path($path);
-  my ( $shortest, $inc, $alias );
-
-  for my $inc_no ( 0 .. $#INC ) {
-    my $candidate_inc = _abs_unix_path( $INC[$inc_no] );
-    next unless my $short = _get_suffix( $candidate_inc, $match_path );
-
-    next if defined $shortest and length $short > length $shortest;
-
-    $shortest = $short;
-    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-    $alias = sprintf q[$INC[%d]], $inc_no;
-    $inc = $candidate_inc;
-  }
-  return unless defined $shortest;
-  return {
-    alias         => $alias,
-    relative_path => $shortest,
-    display       => $alias,
-    alias_path    => $inc,
-  };
 }
 
 package Module::Path::Simplify::_AliasMap;
