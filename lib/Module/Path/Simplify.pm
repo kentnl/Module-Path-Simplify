@@ -35,13 +35,17 @@ sub new {
 sub simplify {
   my ( $self, $path ) = @_;
 
-  my $best = $self->_find_in_set( $path, $self->_tests_config, $self->_tests_inc );
+  my $match_path = _abs_unix_path($path);
 
-  return $path unless defined $best;
+  my $best_match = $self->_find_in_set( $match_path, $self->_tests_config, $self->_tests_inc );
 
-  $self->aliases->set( $best->{alias}, $best->{alias_path}, $best->{display}, );
-  my $real_display = $self->aliases->get_display( $best->{alias} );
-  return sprintf q[%s/%s], $real_display, $best->{relative_path};
+  return $path unless defined $best_match;
+
+  my $match_target = $best_match->{match_target};
+
+  $self->aliases->set( $match_target->alias, $match_target->alias_path, $match_target->display );
+  my $real_display = $self->aliases->get_display( $match_target->alias );
+  return sprintf q[%s/%s], $real_display, $best_match->{relative_path};
 }
 
 
@@ -103,6 +107,7 @@ sub _gen_tests_config {
     { display => 'PL', key => 'privlib' },
   );
   for my $try (@try) {
+<<<<<<< HEAD
     ## no critic (Variables::ProhibitPackageVars)
     next unless my $candidate_lib = _abs_unix_path( $Config::Config{ $try->{key} } );
     push @out, {
@@ -111,6 +116,14 @@ sub _gen_tests_config {
       ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
       display => '${' . $try->{display} . '}',
     };
+=======
+    push @out,
+      Module::Path::Simplify::_MatchTarget->new(
+      alias_path => $Config::Config{ $try->{key} },
+      alias      => 'config.' . $try->{key},
+      display    => '${' . $try->{display} . '}',
+      );
+>>>>>>> a145124... Move matching logic into a container
   }
   return @out;
 }
@@ -120,13 +133,12 @@ sub _gen_tests_user_inc {
   my (@out);
   my (@u_inc) = @{ $list || [] };
   for my $inc_no ( 0 .. $#u_inc ) {
-    next unless my $candidate_inc = _abs_unix_path( $u_inc[$inc_no] );
     push @out,
-      {
-      alias_path => $candidate_inc,
+      Module::Path::Simplify::_MatchTarget->new(
+      alias_path => $u_inc[$inc_no],
       alias      => $prefix . '[' . $inc_no . ']',
       display    => $prefix . '[' . $inc_no . ']',
-      };
+      );
   }
   return @out;
 }
@@ -141,34 +153,18 @@ sub _tests_inc {
 
 sub _find_in_set {
   my ( undef, $path, @tries ) = @_;
-  my $match_path = _abs_unix_path($path);
-  my ( $shortest, $alias_path, $alias, $display );
+  my ( $shortest, $match_target );
   for my $try (@tries) {
-    next unless my $short = _get_suffix( $try->{alias_path}, $match_path );
+    next unless $try->valid and my $short = $try->matched_suffix($path);
     next if defined $shortest and length $short >= length $shortest;
-    $shortest   = $short;
-    $alias_path = $try->{alias_path};
-    $alias      = $try->{alias};
-    $display    = $try->{display};
+    $shortest     = $short;
+    $match_target = $try;
   }
   return unless defined $shortest;
   return {
-    alias         => $alias,
     relative_path => $shortest,
-    display       => $display,
-    alias_path    => $alias_path,
+    match_target  => $match_target
   };
-}
-
-sub _get_suffix {
-  my ( $prefix, $path ) = @_;
-  return if not defined $path or ref $path;
-  $prefix =~ s{ /? \z }{/}gxs;
-  if ( $path =~ / \A \Q$prefix\E (.*\z) /sx ) {
-    my $short = $1;
-    return $short;
-  }
-  return;
 }
 
 sub _abs_unix_path {
@@ -195,6 +191,53 @@ sub _abs_unix_path {
   $abs_path =~ s{ \\ }{/}sgx;
 
   return $abs_path;
+}
+
+package Module::Path::Simplify::_MatchTarget;
+
+sub new {
+  my ( $class, @args ) = @_;
+  return bless { ref $args[0] ? @{ $args[0] } : @args }, $class;
+}
+
+sub display {
+  my ( $self, ) = @_;
+  return ( $self->{display} || $self->alias );
+}
+
+sub alias {
+  my ( $self, ) = @_;
+  return $self->{alias};
+}
+
+sub alias_path {
+  my ( $self, ) = @_;
+  return $self->{alias_path};
+}
+
+sub alias_unixpath {
+  my ( $self, ) = @_;
+  return $self->{alias_unixpath} if exists $self->{alias_unixpath};
+  return ( $self->{alias_unixpath} ||= Module::Path::Simplify::_abs_unix_path( $self->alias_path ) );
+}
+
+sub valid {
+  my ( $self, ) = @_;
+  return unless $self->alias_path;
+  return unless $self->alias_unixpath;
+  return 1;
+}
+
+sub matched_suffix {
+  my ( $self, $path ) = @_;
+  return if not defined $path or ref $path;
+  my $prefix = $self->alias_unixpath;
+  $prefix =~ s{ /? \z }{/}gxs;
+  if ( $path =~ / \A \Q$prefix\E (.*\z) /sx ) {
+    my $short = $1;
+    return $short;
+  }
+  return;
 }
 
 package Module::Path::Simplify::_AliasMap;
