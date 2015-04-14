@@ -147,39 +147,44 @@ sub names {
 }
 
 sub get_path {
-    my ( $self, $alias ) = @_;
-    return $self->{aliases}->{$alias}->{'path'}
-      if exists $self->{aliases}->{$alias};
-    return;
+  my ( $self, $alias ) = @_;
+  return $self->{aliases}->{$alias}->{'path'}
+    if exists $self->{aliases}->{$alias};
+  return;
 }
 
 # Again, note: this sets the user override, which is only
 # to be used when the alias is actually vivified.
 sub set_display {
-    my ( $self, $alias, $display ) = @_;
-    $self->{display}->{$alias} = $display;
-    return;
+  my ( $self, $alias, $display ) = @_;
+  $self->{display}->{$alias} = $display;
+  return;
 }
 
 sub get_display {
-    my ( $self, $alias ) = @_;
-    return $self->{display}->{$alias} if exists $self->{display}->{$alias};
-    return $self->{aliases}->{$alias}->{display}
-      if exists $self->{aliases}->{$alias}
-      and exists $self->{aliases}->{$alias}->{display};
-    return $alias;
+  my ( $self, $alias ) = @_;
+  return $self->{display}->{$alias} if exists $self->{display}->{$alias};
+  return $self->{aliases}->{$alias}->{display}
+    if exists $self->{aliases}->{$alias}
+    and exists $self->{aliases}->{$alias}->{display};
+  return $alias;
+}
+
+sub get_path_suffixed {
+  my ( $self, $alias ) = @_;
+  if ( $alias eq $self->get_display($_) ) {
+    return $self->get_path($alias);
+  }
+  return sprintf q[%s (%s)], $self->get_path($alias), $alias;
 }
 
 sub pretty {
-    my ($self) = @_;
-    my $max;
-    for my $name ( $self->names ) {
-      $max = length $name if not defined $max or length $name > $max;
-    }
-    return map {
-      sprintf "%${max}s => %s%s", $self->get_display($_), $self->get_path($_),
-        ( $_ eq $self->get_display($_) ? q[] : ' (' . $_ . ')' )
-    } $self->names;
+  my ($self) = @_;
+  my $max;
+  for my $name ( $self->names ) {
+    $max = length $name if not defined $max or length $name > $max;
+  }
+  return map { sprintf "%${max}s => %s%s", $self->get_display($_), $self->get_path_suffixed($_) } $self->names;
 }
 
 1;
