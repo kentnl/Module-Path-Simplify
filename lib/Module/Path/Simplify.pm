@@ -122,16 +122,16 @@ sub _get_suffix {
 
 sub _abs_unix_path {
   my ($path) = @_;
-  return '' unless defined $path;
+  return q{} unless defined $path;
   require File::Spec;
-  return '' unless -e $path or File::Spec->file_name_is_absolute($path);
+  return q{} unless -e $path or File::Spec->file_name_is_absolute($path);
 
   # File::Spec's rel2abs does not resolve symlinks
   # we *need* to look at the filesystem to be sure
   require Cwd;
   my $abs_path = Cwd::abs_path($path);
 
-  return $abs_path unless $^O eq 'MSWin32' and $abs_path;
+  return $abs_path unless 'MSWin32' eq $^O and $abs_path;
 
   eval sprintf q[require %s; 1], q[Win32];
 
