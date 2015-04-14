@@ -18,7 +18,9 @@ our $AUTHORITY = 'cpan:KENTNL'; # AUTHORITY
 
 sub new {
   my ( $class, @args ) = @_;
-  return bless { ref $args[0] ? %{ $args[0] } : @args }, $class;
+  my $self = bless { ref $args[0] ? %{ $args[0] } : @args }, $class;
+  $self->inc unless $self->inc_dynamic;    # Force freezing at new
+  return $self;
 }
 
 
@@ -33,15 +35,15 @@ sub new {
 sub simplify {
   my ( $self, $path ) = @_;
 
-  my ( $best, ) = sort { length $a->{relative_path} <=> length $b->{relative_path} } grep { defined }
-    $self->_find_config($path),
-    $self->_find_inc($path);
+  my $best_match = $self->_find_in_set( $path, $self->_tests_config, $self->_tests_inc );
 
-  return $path unless defined $best;
+  return $path unless defined $best_match;
 
-  $self->aliases->set( $best->{alias}, $best->{alias_path}, $best->{display}, );
-  my $real_display = $self->aliases->get_display( $best->{alias} );
-  return sprintf q[%s/%s], $real_display, $best->{relative_path};
+  my $match_target = $best_match->{match_target};
+
+  $self->aliases->set( $match_target->alias, $match_target->alias_path, $match_target->display );
+  my $real_display = $self->aliases->get_display( $match_target->alias );
+  return sprintf q[%s/%s], $real_display, $best_match->{relative_path};
 }
 
 
@@ -67,9 +69,25 @@ sub pp_aliases {
   return qq[\t] . join qq[\n\t], $self->aliases->pretty;
 }
 
-sub _find_config {
-  my ( undef, $path, ) = @_;
-  my $match_path = _abs_unix_path($path);
+sub inc_dynamic {
+  my ($self) = @_;
+  return $self->{inc_dynamic} if exists $self->{inc_dynamic};
+  return;
+}
+
+sub inc {
+  my ($self) = @_;
+  return @{ $self->{inc} } if exists $self->{inc};
+  return @{ $self->{inc} ||= [@INC] };
+}
+
+sub _tests_config {
+  my ($self) = @_;
+  return @{ $self->{_tests_config} ||= [ $self->_gen_tests_config ] };
+}
+
+sub _gen_tests_config {
+  my (@out);
   require Config;
   my (@try) = (
     { display => 'SA', key => 'sitearch' },
@@ -86,26 +104,53 @@ sub _find_config {
     { display => 'PA', key => 'archlib' },
     { display => 'PL', key => 'privlib' },
   );
-  my ( $shortest, $lib, $alias, $display );
+  for my $try (@try) {
+    push @out,
+      Module::Path::Simplify::_MatchTarget->new(
+      alias_path => $Config::Config{ $try->{key} },
+      alias      => 'config.' . $try->{key},
+      display    => '${' . $try->{display} . '}',
+      );
+  }
+  return @out;
+}
 
-  for my $job (@try) {
-    ## no critic (Variables::ProhibitPackageVars)
-    my $candidate_lib = _abs_unix_path( $Config::Config{ $job->{key} } );
-    next unless my $short = _get_suffix( $candidate_lib, $match_path );
+sub _gen_tests_user_inc {
+  my ( $self, $prefix, $list ) = @_;
+  my (@out);
+  my (@u_inc) = @{ $list || [] };
+  for my $inc_no ( 0 .. $#u_inc ) {
+    push @out,
+      Module::Path::Simplify::_MatchTarget->new(
+      alias_path => $u_inc[$inc_no],
+      alias      => $prefix . '[' . $inc_no . ']',
+      display    => $prefix . '[' . $inc_no . ']',
+      );
+  }
+  return @out;
+}
 
-    next if defined $shortest and length $short > length $shortest;
-    $shortest = $short;
-    $lib      = $candidate_lib;
-    $alias    = 'config.' . $job->{key};
-    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-    $display = '${' . $job->{display} . '}';
+# Cache + saves on first use unless nonfrozen.
+sub _tests_inc {
+  my ($self) = @_;
+  return @{ $self->{_tests_inc} ||= [ $self->_gen_tests_user_inc( '$INC', [ $self->inc ] ) ] } unless $self->inc_dynamic;
+  return $self->_gen_tests_user_inc( '$INC', \@INC );
+}
+
+sub _find_in_set {
+  my ( undef, $path, @tries ) = @_;
+  my $match_path = _abs_unix_path($path);
+  my ( $shortest, $match_target );
+  for my $try (@tries) {
+    next unless my $short = _get_suffix( $try->alias_unixpath, $match_path );
+    next if defined $shortest and length $short >= length $shortest;
+    $shortest     = $short;
+    $match_target = $try;
   }
   return unless defined $shortest;
   return {
-    alias         => $alias,
     relative_path => $shortest,
-    display       => $display,
-    alias_path    => $lib,
+    match_target  => $match_target
   };
 }
 
@@ -133,7 +178,8 @@ sub _abs_unix_path {
 
   return $abs_path unless 'MSWin32' eq $^O and $abs_path;
 
-  my $module = 'Win32.pm'; require $module; # Hide from autoprereqs
+  my $module = 'Win32.pm';
+  require $module;    # Hide from autoprereqs
 
   ## no critic (Subroutines::ProhibitCallsToUnexportedSubs)
   # sometimes we can get a short/longname mix, normalize everything to longnames
@@ -145,29 +191,39 @@ sub _abs_unix_path {
   return $abs_path;
 }
 
-sub _find_inc {
-  my ( undef, $path, ) = @_;
-  my $match_path = _abs_unix_path($path);
-  my ( $shortest, $inc, $alias );
+package Module::Path::Simplify::_MatchTarget;
 
-  for my $inc_no ( 0 .. $#INC ) {
-    my $candidate_inc = _abs_unix_path( $INC[$inc_no] );
-    next unless my $short = _get_suffix( $candidate_inc, $match_path );
+sub new {
+  my ( $class, @args ) = @_;
+  return bless { ref $args[0] ? @{ $args[0] } : @args }, $class;
+}
 
-    next if defined $shortest and length $short > length $shortest;
+sub display {
+  my ( $self, ) = @_;
+  return ( $self->{display} || $self->alias );
+}
 
-    $shortest = $short;
-    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-    $alias = sprintf q[$INC[%d]], $inc_no;
-    $inc = $candidate_inc;
-  }
-  return unless defined $shortest;
-  return {
-    alias         => $alias,
-    relative_path => $shortest,
-    display       => $alias,
-    alias_path    => $inc,
-  };
+sub alias {
+  my ( $self, ) = @_;
+  return $self->{alias};
+}
+
+sub alias_path {
+  my ( $self, ) = @_;
+  return $self->{alias_path};
+}
+
+sub alias_unixpath {
+  my ( $self, ) = @_;
+  return $self->{alias_unixpath} if exists $self->{alias_unixpath};
+  return ( $self->{alias_unixpath} ||= Module::Path::Simplify::_abs_unix_path( $self->alias_path ) );
+}
+
+sub valid {
+  my ( $self, ) = @_;
+  return unless $self->alias_path;
+  return unless $self->alias_unixpath;
+  return 1;
 }
 
 package Module::Path::Simplify::_AliasMap;
