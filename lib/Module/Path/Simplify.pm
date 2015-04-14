@@ -84,10 +84,7 @@ sub _find_config {
     { display => 'PA', key => 'archlib' },
     { display => 'PL', key => 'privlib' },
   );
-  my $shortest;
-  my $lib;
-  my $alias;
-  my $display;
+  my ( $shortest, $lib, $alias, $display );
 
   for my $job (@try) {
     ## no critic (Variables::ProhibitPackageVars)
@@ -116,9 +113,8 @@ sub _find_config {
 
 sub _find_inc {
   my ( undef, $path, ) = @_;
-  my $shortest;
-  my $inc;
-  my $alias;
+
+  my ( $shortest, $inc, $alias );
 
   for my $inc_no ( 0 .. $#INC ) {
     my $candidate_inc = $INC[$inc_no];
