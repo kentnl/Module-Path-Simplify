@@ -133,7 +133,7 @@ sub _abs_unix_path {
 
   return $abs_path unless 'MSWin32' eq $^O and $abs_path;
 
-  eval sprintf q[require %s; 1], q[Win32];
+  require "Win32.pm";
 
   # sometimes we can get a short/longname mix, normalize everything to longnames
   $abs_path = Win32::GetLongPathName($abs_path);
