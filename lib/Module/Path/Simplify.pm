@@ -209,6 +209,7 @@ sub alias_path {
 sub alias_unixpath {
   my ( $self, ) = @_;
   return $self->{alias_unixpath} if exists $self->{alias_unixpath};
+  ## no critic (Subroutines::ProhibitCallsToUnexportedSubs,Subroutines::ProtectPrivateSubs)
   return ( $self->{alias_unixpath} ||= Module::Path::Simplify::_abs_unix_path( $self->alias_path ) );
 }
 
