@@ -105,13 +105,14 @@ sub _gen_tests_config {
     { display => 'PL', key => 'privlib' },
   );
   require Config;
+  ## no critic (Lax::ProhibitComplexMappings::LinesNotStatements)
   return map {
     Module::Path::Simplify::_MatchTarget->new(
       ## no critic (Variables::ProhibitPackageVars)
       alias_path => $Config::Config{ $_->{key} },
       alias      => 'config.' . $_->{key},
-      display    => '${' . $_->{display} . '}',
       ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+      display => '${' . $_->{display} . '}',
     );
   } @try;
 }
@@ -119,6 +120,7 @@ sub _gen_tests_config {
 sub _gen_tests_user_inc {
   my ( undef, $prefix, $list ) = @_;
   my (@u_inc) = @{ $list || [] };
+  ## no critic (Lax::ProhibitComplexMappings::LinesNotStatements)
   return map {
     Module::Path::Simplify::_MatchTarget->new(
       alias_path => $u_inc[$_],
