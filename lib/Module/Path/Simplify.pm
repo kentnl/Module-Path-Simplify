@@ -43,7 +43,7 @@ sub simplify {
 
   my $match_target = $best_match->{match_target};
 
-  $self->aliases->set( $match_target->alias, $match_target->alias_path, $match_target->display );
+  $self->aliases->track($match_target);
   my $real_display = $self->aliases->get_display( $match_target->alias );
   return sprintf q[%s/%s], $real_display, $best_match->{relative_path};
 }
@@ -239,12 +239,9 @@ sub new {
 # User specific overrides must be independent as
 # not to create alias entries for things that aren't seen.
 ## no critic (NamingConventions::ProhibitAmbiguousNames)
-sub set {
-  my ( $self, $alias, $path, $display ) = @_;
-  $self->{aliases}->{$alias} = {
-    path => $path,
-    ( $display ? ( display => $display ) : () ),
-  };
+sub track {
+  my ( $self, $match_target ) = @_;
+  $self->{aliases}->{ $match_target->alias } = $match_target;
   return;
 }
 
@@ -261,7 +258,7 @@ sub names {
 
 sub get_path {
   my ( $self, $alias ) = @_;
-  return $self->{aliases}->{$alias}->{'path'}
+  return $self->{aliases}->{$alias}->alias_unixpath
     if exists $self->{aliases}->{$alias};
   return;
 }
@@ -277,9 +274,9 @@ sub set_display {
 sub get_display {
   my ( $self, $alias ) = @_;
   return $self->{display}->{$alias} if exists $self->{display}->{$alias};
-  return $self->{aliases}->{$alias}->{display}
+  return $self->{aliases}->{$alias}->display
     if exists $self->{aliases}->{$alias}
-    and exists $self->{aliases}->{$alias}->{display};
+    and $self->{aliases}->{$alias}->display;
   return $alias;
 }
 
