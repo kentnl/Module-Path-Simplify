@@ -108,9 +108,37 @@ sub inc {
   return @{ $self->{inc} ||= [@INC] };
 }
 
+# Iterates @$tries
+# and returns a {} if $try[n] is a prefix.
+sub _find_in_set {
+  my ( undef, $path, $tries ) = @_;
+  my ( $shortest, $match_target );
+  for my $try ( @{$tries} ) {
+    next unless $try->valid and my $short = $try->matched_suffix($path);
+    next if defined $shortest and length $short >= length $shortest;
+    $shortest     = $short;
+    $match_target = $try;
+  }
+  return unless defined $shortest;
+  return {
+    relative_path => $shortest,
+    match_target  => $match_target,
+  };
+}
+
+# Private lazy accessor
 sub _tests_config {
   my ($self) = @_;
   return @{ $self->{_tests_config} ||= [ $self->_gen_tests_config ] };
+}
+
+# Private lazy accessor
+# Cache + saves on first use unless nonfrozen.
+sub _tests_inc {
+  my ($self) = @_;
+  ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+  return @{ $self->{_tests_inc} ||= [ $self->_gen_tests_user_inc( '$INC', [ $self->inc ] ) ] } unless $self->inc_dynamic;
+  return $self->_gen_tests_user_inc( '$INC', \@INC );
 }
 
 sub _gen_tests_config {
@@ -153,30 +181,6 @@ sub _gen_tests_user_inc {
       display    => $prefix . '[' . $_ . ']',
     );
   } 0 .. $#u_inc;
-}
-
-# Cache + saves on first use unless nonfrozen.
-sub _tests_inc {
-  my ($self) = @_;
-  ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-  return @{ $self->{_tests_inc} ||= [ $self->_gen_tests_user_inc( '$INC', [ $self->inc ] ) ] } unless $self->inc_dynamic;
-  return $self->_gen_tests_user_inc( '$INC', \@INC );
-}
-
-sub _find_in_set {
-  my ( undef, $path, $tries ) = @_;
-  my ( $shortest, $match_target );
-  for my $try ( @{$tries} ) {
-    next unless $try->valid and my $short = $try->matched_suffix($path);
-    next if defined $shortest and length $short >= length $shortest;
-    $shortest     = $short;
-    $match_target = $try;
-  }
-  return unless defined $shortest;
-  return {
-    relative_path => $shortest,
-    match_target  => $match_target,
-  };
 }
 
 sub _abs_unix_path {
