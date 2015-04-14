@@ -105,10 +105,13 @@ sub _gen_tests_config {
     { display => 'PL', key => 'privlib' },
   );
   require Config;
+  ## no critic (Lax::ProhibitComplexMappings::LinesNotStatements)
   return map {
     Module::Path::Simplify::_MatchTarget->new(
+      ## no critic (Variables::ProhibitPackageVars)
       alias_path => $Config::Config{ $_->{key} },
       alias      => 'config.' . $_->{key},
+      ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
       display    => '${' . $_->{display} . '}',
       )
   } @try;
@@ -117,18 +120,20 @@ sub _gen_tests_config {
 sub _gen_tests_user_inc {
   my ( $self, $prefix, $list ) = @_;
   my (@u_inc) = @{ $list || [] };
+  ## no critic (Lax::ProhibitComplexMappings::LinesNotStatements)
   return map {
     Module::Path::Simplify::_MatchTarget->new(
       alias_path => $u_inc[$_],
       alias      => $prefix . '[' . $_ . ']',
       display    => $prefix . '[' . $_ . ']',
-    )
+      )
   } 0 .. $#u_inc;
 }
 
 # Cache + saves on first use unless nonfrozen.
 sub _tests_inc {
   my ($self) = @_;
+  ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
   return @{ $self->{_tests_inc} ||= [ $self->_gen_tests_user_inc( '$INC', [ $self->inc ] ) ] } unless $self->inc_dynamic;
   return $self->_gen_tests_user_inc( '$INC', \@INC );
 }
@@ -145,7 +150,7 @@ sub _find_in_set {
   return unless defined $shortest;
   return {
     relative_path => $shortest,
-    match_target  => $match_target
+    match_target  => $match_target,
   };
 }
 
@@ -200,6 +205,7 @@ sub alias_path {
 sub alias_unixpath {
   my ( $self, ) = @_;
   return $self->{alias_unixpath} if exists $self->{alias_unixpath};
+  ## no critic (Subroutines::ProhibitCallsToUnexportedSubs, Subroutines::ProtectPrivateSubs)
   return ( $self->{alias_unixpath} ||= Module::Path::Simplify::_abs_unix_path( $self->alias_path ) );
 }
 
