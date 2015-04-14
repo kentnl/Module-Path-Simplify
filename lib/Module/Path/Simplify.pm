@@ -133,7 +133,7 @@ sub _abs_unix_path {
 
   return $abs_path unless 'MSWin32' eq $^O and $abs_path;
 
-  require "Win32.pm";
+  my $module = "Win32.pm"; require $module; # Hide from autoprereqs
 
   # sometimes we can get a short/longname mix, normalize everything to longnames
   $abs_path = Win32::GetLongPathName($abs_path);
