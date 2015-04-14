@@ -69,7 +69,7 @@ sub pp_aliases {
 
 sub _find_config {
   my ( undef, $path, ) = @_;
-  my $match_path = _abs_unix_path( $path );
+  my $match_path = _abs_unix_path($path);
   require Config;
   my (@try) = (
     { display => 'SA', key => 'sitearch' },
@@ -91,18 +91,14 @@ sub _find_config {
   for my $job (@try) {
     ## no critic (Variables::ProhibitPackageVars)
     my $candidate_lib = _abs_unix_path( $Config::Config{ $job->{key} } );
-    next if not defined $candidate_lib or ref $candidate_lib;
-    $candidate_lib =~ s{ /? \z }{/}gxs;
-    if ( $match_path =~ / \A \Q$candidate_lib\E (.*\z) /sx ) {
-      my $short = $1;
+    next unless my $short = _get_suffix( $candidate_lib, $match_path );
 
-      next if defined $shortest and length $short > length $shortest;
-      $shortest = $short;
-      $lib      = $candidate_lib;
-      $alias    = 'config.' . $job->{key};
-      ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-      $display = '${' . $job->{display} . '}';
-    }
+    next if defined $shortest and length $short > length $shortest;
+    $shortest = $short;
+    $lib      = $candidate_lib;
+    $alias    = 'config.' . $job->{key};
+    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+    $display = '${' . $job->{display} . '}';
   }
   return unless defined $shortest;
   return {
@@ -113,8 +109,19 @@ sub _find_config {
   };
 }
 
+sub _get_suffix {
+  my ( $prefix, $path ) = @_;
+  return unless defined $path and not ref $path;
+  $prefix =~ s{ /? \z }{/}gxs;
+  if ( $path =~ / \A \Q$prefix\E (.*\z) /sx ) {
+    my $short = $1;
+    return $short;
+  }
+  return;
+}
+
 sub _abs_unix_path {
-  my ( $path ) = @_;
+  my ($path) = @_;
   return '' unless defined $path;
   require File::Spec;
   return '' unless ( -e $path or File::Spec->file_name_is_absolute($path) );
@@ -139,22 +146,19 @@ sub _abs_unix_path {
 
 sub _find_inc {
   my ( undef, $path, ) = @_;
-  my $match_path = _abs_unix_path( $path );
+  my $match_path = _abs_unix_path($path);
   my ( $shortest, $inc, $alias );
 
   for my $inc_no ( 0 .. $#INC ) {
-    my $candidate_inc = _abs_unix_path($INC[$inc_no]);
-    next if ref $candidate_inc;
-    $candidate_inc =~ s{ /? \z }{/}gsx;
-    if ( $match_path =~ / \A \Q$candidate_inc\E (.*\z) /sx ) {
-      my $short = $1;
-      next if defined $shortest and length $short > length $shortest;
+    my $candidate_inc = _abs_unix_path( $INC[$inc_no] );
+    next unless my $short = _get_suffix( $candidate_inc, $match_path );
 
-      $shortest = $short;
-      ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
-      $alias = sprintf q[$INC[%d]], $inc_no;
-      $inc = $candidate_inc;
-    }
+    next if defined $shortest and length $short > length $shortest;
+
+    $shortest = $short;
+    ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+    $alias = sprintf q[$INC[%d]], $inc_no;
+    $inc = $candidate_inc;
   }
   return unless defined $shortest;
   return {
