@@ -11,7 +11,8 @@ my @files = (
     't/00-compile/lib_Module_Path_Simplify_pm.t',
     't/00-report-prereqs.dd',
     't/00-report-prereqs.t',
-    't/inc_check.t'
+    't/inc_check.t',
+    't/set_display.t'
 );
 
 eol_unix_ok($_, { trailing_whitespace => 1 }) foreach @files;
