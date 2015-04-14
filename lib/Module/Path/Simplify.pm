@@ -141,10 +141,8 @@ sub get {
 }
 
 sub names {
-## Please see file perltidy.ERR
-## Please see file perltidy.ERR
   my ($self) = @_;
-  my (@list) = sort keys %{ $self->{aliases} } );
+  my (@list) = sort keys %{ $self->{aliases} };
   return @list;
 }
 
@@ -180,7 +178,7 @@ sub pretty {
     }
     return map {
       sprintf "%${max}s => %s%s", $self->get_display($_), $self->get_path($_),
-        ( $_ eq $self->get_display($_) ? "" : ' (' . $_ . ')' )
+        ( $_ eq $self->get_display($_) ? q[] : ' (' . $_ . ')' )
     } $self->names;
 }
 
