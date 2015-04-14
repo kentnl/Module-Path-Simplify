@@ -108,14 +108,13 @@ sub _gen_tests_config {
   );
   for my $try (@try) {
     ## no critic (Variables::ProhibitPackageVars)
-    push @out, {
-      Module::Path::Simplify::_MatchTarget->new(
+    push @out, Module::Path::Simplify::_MatchTarget->new(
       ## no critic (Variables::ProhibitPackageVars)
       alias_path => $Config::Config{ $try->{key} },
       alias      => 'config.' . $try->{key},
       ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
       display => '${' . $try->{display} . '}',
-      );
+    );
   }
   return @out;
 }
