@@ -103,19 +103,20 @@ sub _gen_tests_config {
     { display => 'PL', key => 'privlib' },
   );
   for my $try (@try) {
+    ## no critic (Variables::ProhibitPackageVars)
     next unless my $candidate_lib = _abs_unix_path( $Config::Config{ $try->{key} } );
-    push @out,
-      {
+    push @out, {
       alias_path => $candidate_lib,
       alias      => 'config.' . $try->{key},
-      display    => '${' . $try->{display} . '}',
-      };
+      ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
+      display => '${' . $try->{display} . '}',
+    };
   }
   return @out;
 }
 
 sub _gen_tests_user_inc {
-  my ( $self, $prefix, $list ) = @_;
+  my ( undef, $prefix, $list ) = @_;
   my (@out);
   my (@u_inc) = @{ $list || [] };
   for my $inc_no ( 0 .. $#u_inc ) {
@@ -133,6 +134,7 @@ sub _gen_tests_user_inc {
 # Cache + saves on first use unless nonfrozen.
 sub _tests_inc {
   my ($self) = @_;
+  ## no critic (ValuesAndExpressions::RequireInterpolationOfMetachars)
   return @{ $self->{_tests_inc} ||= [ $self->_gen_tests_user_inc( '$INC', [ $self->inc ] ) ] } unless $self->inc_dynamic;
   return $self->_gen_tests_user_inc( '$INC', \@INC );
 }
@@ -143,7 +145,7 @@ sub _find_in_set {
   my ( $shortest, $alias_path, $alias, $display );
   for my $try (@tries) {
     next unless my $short = _get_suffix( $try->{alias_path}, $match_path );
-    next if defined $shortest and length $short > length $shortest;
+    next if defined $shortest and length $short >= length $shortest;
     $shortest   = $short;
     $alias_path = $try->{alias_path};
     $alias      = $try->{alias};
